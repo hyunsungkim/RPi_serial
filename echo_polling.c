@@ -8,13 +8,19 @@
 
 #define BAUDRATE B1000000
 
+void task()
+{
+	int i;
+	for(i=0; i<400000000; i++);
+}
+
 int main()
 {
 	int fd;
 	struct termios newtio;
 	char buf[256];
 
-	fd = open("/dev/ttyAMA0", O_RDWR|O_NOCTTY);
+	fd = open("/dev/ttyS0", O_RDWR|O_NOCTTY);
 	if(fd<0) {
 		fprintf(stderr, "failed to open port: %s.\r\n", strerror(errno));
 		printf("Make sure you are executing in sudo.\r\n");
@@ -28,23 +34,26 @@ int main()
 	newtio.c_lflag = 0;
 	newtio.c_cc[VTIME] = 0;
 	newtio.c_cc[VMIN] = 1;
-	
-//	speed_t baudRate = B1000000;
-//	cfsetispeed(&newtio, baudRate);
-//	cfsetospeed(&newtio, baudRate);
+
+	//	speed_t baudRate = B1000000;
+	//	cfsetispeed(&newtio, baudRate);
+	//	cfsetospeed(&newtio, baudRate);
 
 	tcflush(fd, TCIFLUSH);
 	tcsetattr(fd, TCSANOW, &newtio);
+	
+	write(fd, "Polling method\r\n", 16);
 
 	while(1) {
+		task();
 		int cnt = read(fd, buf, sizeof(buf));
 		if(cnt>0) {
 			buf[cnt] = '\0';
-			printf("Received: %s\r\n", buf);
 			write(fd, "echo: ", 6);
 			write(fd, buf, cnt);
 			write(fd, "\r\n", 2);
 		}
 	}
+
 	return 0;
 }
