@@ -2,6 +2,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/poll.h>
 #include <termios.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -18,9 +19,10 @@ int main()
 {
 	int fd;
 	struct termios newtio;
+	struct pollfd poll_handler;
 	char buf[256];
 
-	fd = open("/dev/ttyAMA0", O_RDWR|O_NOCTTY);
+	fd = open("/dev/ttyS0", O_RDWR|O_NOCTTY);
 	if(fd<0) {
 		fprintf(stderr, "failed to open port: %s.\r\n", strerror(errno));
 		printf("Make sure you are executing in sudo.\r\n");
@@ -41,17 +43,27 @@ int main()
 
 	tcflush(fd, TCIFLUSH);
 	tcsetattr(fd, TCSANOW, &newtio);
-	
+
+	poll_handler.fd = fd;
+	poll_handler.events = POLLIN|POLLERR;
+	poll_handler.revents = 0;
+
 	write(fd, "Polling method\r\n", 16);
 
 	while(1) {
 		task();
-		int cnt = read(fd, buf, sizeof(buf));
-		if(cnt>0) {
-			buf[cnt] = '\0';
-			write(fd, "echo: ", 6);
-			write(fd, buf, cnt);
-			write(fd, "\r\n", 2);
+		if(poll((struct pollfd*)&poll_handler, 1, 2000) > 0) {
+			if(poll_handler.revents & POLLIN) {
+				int cnt = read(fd, buf, sizeof(buf));
+				buf[cnt] = '\0';
+				write(fd, "echo: ", 6);
+				write(fd, buf, cnt);
+				write(fd, "\r\n", 2);
+			}
+			else if(poll_handler.revents & POLLERR) {
+				printf("Error in communication. Abort program\r\n");
+				return 0;
+			}
 		}
 	}
 
