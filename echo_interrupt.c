@@ -12,7 +12,7 @@
 int fd;
 char buf[256];
 
-void signal_handler_IO(int status)
+void callback_function(int status)
 {
 	int cnt = read(fd, buf, 256);
 	buf[cnt] = '\0';
@@ -43,7 +43,7 @@ int main()
 	usleep(250000);
 
 	memset(&saio, 0, sizeof(saio));	
-	saio.sa_handler = signal_handler_IO;
+	saio.sa_handler = callback_function;
 	saio.sa_restorer = NULL;
 	sigaction(SIGIO, &saio, NULL);
 
