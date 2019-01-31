@@ -20,7 +20,7 @@ int main()
 	struct termios newtio;
 	char buf[256];
 
-	fd = open("/dev/ttyS0", O_RDWR|O_NOCTTY);
+	fd = open("/dev/ttyAMA0", O_RDWR|O_NOCTTY);
 	if(fd<0) {
 		fprintf(stderr, "failed to open port: %s.\r\n", strerror(errno));
 		printf("Make sure you are executing in sudo.\r\n");
